@@ -7,14 +7,23 @@ import csv
 import datetime
 
 
+# 起動
+print('起動しました')
+
 # コンフィグ
 config = configparser.ConfigParser()
 config.read('config.ini', encoding='UTF-8')
+
+# 起動
+print(f"設定を読み込みました: channel={config['SESSION']['CHANNEL']}, owner={int(config['SESSION']['OWNER'])}")
 
 # フォルダ
 os.makedirs('./data', exist_ok=True)
 os.makedirs('./data/log', exist_ok=True)
 os.makedirs('./data/corrupted', exist_ok=True)
+
+# 起動
+print('フォルダを生成しました')
 
 
 # セッション
