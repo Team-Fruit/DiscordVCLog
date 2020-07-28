@@ -12,8 +12,9 @@ config = configparser.ConfigParser()
 config.read('config.ini', encoding='UTF-8')
 
 # フォルダ
-os.makedirs('data/log', exist_ok=True)
-os.makedirs('data/corrupted', exist_ok=True)
+os.makedirs('./data', exist_ok=True)
+os.makedirs('./data/log', exist_ok=True)
+os.makedirs('./data/corrupted', exist_ok=True)
 
 
 # セッション
@@ -30,7 +31,7 @@ class Session:
 
 # セッション
 session = Session(int(config['SESSION']['CHANNEL']), int(config['SESSION']['OWNER']))
-session.path = f'data/corrupted/{datetime.date.today()}.csv'
+session.path = f'./data/corrupted/{datetime.date.today()}.csv'
 
 
 # 接続に必要なオブジェクトを生成
@@ -82,7 +83,7 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
         # 参加
         if session.is_target(after.channel):
             session.enabled = True
-            session.path = f'data/log/{datetime.date.today()}.csv'
+            session.path = f'./data/log/{datetime.date.today()}.csv'
 
             # 主
             with Log(session.path) as log:
@@ -128,6 +129,9 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
 
             return
 
+
+# 初期化
+print('初期化しました')
 
 # Botの起動とDiscordサーバーへの接続
 bot.run(os.environ["DISCORD_TOKEN"])
