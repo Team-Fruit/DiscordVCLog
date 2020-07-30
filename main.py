@@ -1,11 +1,11 @@
 # discord.py
-import discord
-import os
-from discord.ext import commands
 import configparser
 import csv
 import datetime
+import os
 
+import discord
+from discord.ext import commands
 
 # タイムゾーン (日付は朝9時に変更=UTC)
 timezone_date = datetime.timezone(datetime.timedelta(hours=0))
@@ -18,8 +18,12 @@ print('起動しました')
 config = configparser.ConfigParser()
 config.read('config.ini', encoding='UTF-8')
 
+ss_guild = int(config['SESSION']['GUILD'])
+ss_channel = int(config['SESSION']['CHANNEL'])
+ss_owner = int(config['SESSION']['OWNER'])
+
 # 起動
-print(f"設定を読み込みました: channel={config['SESSION']['CHANNEL']}, owner={int(config['SESSION']['OWNER'])}")
+print(f"設定を読み込みました: guild={ss_guild}, channel={ss_channel}, owner={ss_owner}")
 
 # フォルダ
 os.makedirs('./data', exist_ok=True)
@@ -43,9 +47,8 @@ class Session:
 
 
 # セッション
-session = Session(int(config['SESSION']['CHANNEL']), int(config['SESSION']['OWNER']))
-session.path = f'./data/corrupted/{datetime.date.today(timezone_date)}.csv'
-
+session = Session(ss_channel, ss_owner)
+session.path = f'./data/corrupted/{datetime.datetime.now(timezone_date).date()}.csv'
 
 # 接続に必要なオブジェクトを生成
 bot = commands.Bot(command_prefix='/')
@@ -55,6 +58,25 @@ bot = commands.Bot(command_prefix='/')
 @bot.event
 async def on_ready():
     # 起動したらターミナルにログイン通知が表示される
+
+    guild = bot.get_guild(ss_guild)
+    if guild is None:
+        print('サーバーが見つかりません')
+        return
+    channel = guild.get_channel(ss_channel)
+    if channel is None:
+        print('チャンネルが見つかりません')
+        return
+    member = guild.get_member(ss_owner)
+    if member is None:
+        print('監視対象が見つかりません')
+        return
+    if ss_owner in channel.members:
+        await on_voice_state_update(
+            member,
+            discord.VoiceState(data={}, channel=None),
+            discord.VoiceState(data={}, channel=channel),
+        )
     print('ログインしました')
 
 
@@ -95,50 +117,56 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
     if member.id == session.owner:
         # 参加
         if session.is_target(after.channel):
+            now = datetime.datetime.now(timezone)
+
             session.enabled = True
-            session.path = f'./data/log/{datetime.date.today(timezone_date)}.csv'
+            session.path = f'./data/log/{datetime.datetime.now(timezone_date).date()}.csv'
 
             # 主
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(timezone), member.id, str(member), True)
+                log.log(now, member.id, str(member), True)
 
             # 既にいる人
             with Log(session.path) as log:
                 for m in after.channel.members:
                     if m != member:
-                        log.log(datetime.datetime.now(timezone), m.id, str(m), True)
+                        log.log(now, m.id, str(m), True)
 
             return
 
         # 退出
         if session.is_target(before.channel):
+            now = datetime.datetime.now(timezone)
+
             session.enabled = False
 
             # 残っている人
             with Log(session.path) as log:
                 for m in before.channel.members:
                     if m != member:
-                        log.log(datetime.datetime.now(timezone), m.id, str(m), False)
+                        log.log(now, m.id, str(m), False)
 
             # 主
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(timezone), member.id, str(member), False)
+                log.log(now, member.id, str(member), False)
 
             return
 
     # 参加勢
     elif session.enabled:
+        now = datetime.datetime.now(timezone)
+
         # 参加
         if session.is_target(after.channel):
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(timezone), member.id, str(member), True)
+                log.log(now, member.id, str(member), True)
 
             return
 
         # 退出
         if session.is_target(before.channel):
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(timezone), member.id, str(member), False)
+                log.log(now, member.id, str(member), False)
 
             return
 
