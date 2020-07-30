@@ -7,6 +7,10 @@ import csv
 import datetime
 
 
+# タイムゾーン (日付は朝9時に変更=UTC)
+timezone_date = datetime.timezone(datetime.timedelta(hours=0))
+timezone = datetime.timezone(datetime.timedelta(hours=9))
+
 # 起動
 print('起動しました')
 
@@ -40,7 +44,7 @@ class Session:
 
 # セッション
 session = Session(int(config['SESSION']['CHANNEL']), int(config['SESSION']['OWNER']))
-session.path = f'./data/corrupted/{datetime.date.today()}.csv'
+session.path = f'./data/corrupted/{datetime.date.today(timezone_date)}.csv'
 
 
 # 接続に必要なオブジェクトを生成
@@ -92,17 +96,17 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
         # 参加
         if session.is_target(after.channel):
             session.enabled = True
-            session.path = f'./data/log/{datetime.date.today()}.csv'
+            session.path = f'./data/log/{datetime.date.today(timezone_date)}.csv'
 
             # 主
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(), member.id, str(member), True)
+                log.log(datetime.datetime.now(timezone), member.id, str(member), True)
 
             # 既にいる人
             with Log(session.path) as log:
                 for m in after.channel.members:
                     if m != member:
-                        log.log(datetime.datetime.now(), m.id, str(m), True)
+                        log.log(datetime.datetime.now(timezone), m.id, str(m), True)
 
             return
 
@@ -114,11 +118,11 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
             with Log(session.path) as log:
                 for m in before.channel.members:
                     if m != member:
-                        log.log(datetime.datetime.now(), m.id, str(m), False)
+                        log.log(datetime.datetime.now(timezone), m.id, str(m), False)
 
             # 主
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(), member.id, str(member), False)
+                log.log(datetime.datetime.now(timezone), member.id, str(member), False)
 
             return
 
@@ -127,14 +131,14 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
         # 参加
         if session.is_target(after.channel):
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(), member.id, str(member), True)
+                log.log(datetime.datetime.now(timezone), member.id, str(member), True)
 
             return
 
         # 退出
         if session.is_target(before.channel):
             with Log(session.path) as log:
-                log.log(datetime.datetime.now(), member.id, str(member), False)
+                log.log(datetime.datetime.now(timezone), member.id, str(member), False)
 
             return
 
